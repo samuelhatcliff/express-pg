@@ -2,8 +2,8 @@
 
 
 const express = require("express");
-const companiesRoutes = require("./routes/companies");
-const invoicesRoutes = require("./routes/invoices");
+const companiesRoutes = require("./routes/companies/companies.js");
+const invoicesRoutes = require("./routes/invoices/invoices.js");
 const app = express();
 const ExpressError = require("./expressError")
 

@@ -1,7 +1,7 @@
 const express = require("express");
-const ExpressError = require("../expressError")
+const ExpressError = require("../../expressError")
 const router = new express.Router();
-const db = require("../db");
+const db = require("../../db");
 
 router.get("/", async function (req, res, next) {
     //get all companies
@@ -18,12 +18,16 @@ router.get("/:code", async function (req, res, next) {
     //get company by code
     try {
         const { code } = req.params
-        const results = await db.query(
+        const company = await db.query(
             `SELECT * FROM companies WHERE code = $1`, [code]);
-        if (results.rows.length === 0) {
+        if (company.rows.length === 0) {
             throw new ExpressError(`Can't find company with code of ${code}`, 404)
         }
-        return res.send({ company: results.rows[0] })
+        const invoices = await db.query(`SELECT * FROM invoices WHERE comp_code = $1`, [code])
+        const invoiceIds = invoices.rows.map(invoice => invoice.id)
+        const { name, description } = company.rows[0]
+        const resObj = { company: { code, name, description, "invoices": invoiceIds } }
+        return res.send(resObj)
     } catch (err) {
         return next(err)
     }
@@ -62,7 +66,7 @@ router.delete("/:code", async function (req, res, next) {
     try {
         const { code } = req.params
         const results = await db.query('DELETE FROM companies WHERE code = $1', [code])
-        if (results.rows.length !== undefined) return res.send({ status: "DELETED!" })
+        if (results.rowCount === 1) return res.send({ status: "DELETED!" })
         throw new ExpressError(`Can't find company with code of ${code}`, 404)
     } catch (err) {
         return next(err)

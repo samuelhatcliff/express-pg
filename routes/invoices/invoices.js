@@ -1,7 +1,7 @@
 const express = require("express");
 const router = new express.Router()
-const ExpressError = require("../expressError")
-const db = require("../db");
+const ExpressError = require("../../expressError")
+const db = require("../../db");
 
 router.get("/", async function (req, res, next) {
     //gets all invoices
@@ -22,8 +22,9 @@ router.get("/:id", async function (req, res, next) {
             `SELECT * FROM invoices WHERE id = $1`, [id]);
         if (results.rows.length === 0) {
             throw new ExpressError(`Can't find any invoice with id of ${id}`, 404)
+        } else {
+            return res.send({ invoice: results.rows[0] })
         }
-        return res.send({ invoice: results.rows[0] })
     } catch (err) {
         return next(err)
     }
@@ -49,7 +50,7 @@ router.put('/:id', async (req, res, next) => {
         const { amt } = req.body
         const { id } = req.params
         const results = await db.query(
-            'UPDATE invoices SET amt=$1 WHERE id=2$ RETURNING id, comp_code, amt, paid, add_date, paid_date', [amt, id]);
+            'UPDATE invoices SET amt=$1 WHERE id=$2 RETURNING id, comp_code, amt, paid, add_date, paid_date', [amt, id]);
         if (results.rows.length === 0) {
             throw new ExpressError(`Can't find invoice with id of ${id}`, 404)
         }
@@ -63,9 +64,13 @@ router.delete("/:id", async function (req, res, next) {
     //deletes an invoice by id
     try {
         const { id } = req.params
-        const results = await db.query('DELETE FROM invoices WHERE id = $1', [id])
-        if (results.rows.length !== undefined) return res.send({ status: "DELETED!" })
-        throw new ExpressError(`Can't find company with code of ${code}`, 404)
+        const resultsBefore = await db.query(
+            `SELECT * FROM invoices WHERE id = $1`, [id]);
+        const resultsAfter = await db.query('DELETE FROM invoices WHERE id = $1', [id])
+        if (resultsBefore.rows.length === resultsAfter.rows.length) {
+            throw new ExpressError(`Can't find invoice with id of ${id}`, 404)
+        }
+        return res.send({ status: "DELETED!" })
     } catch (err) {
         return next(err)
     }
