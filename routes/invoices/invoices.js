@@ -49,10 +49,19 @@ router.post('/', async (req, res, next) => {
 router.put('/:id', async (req, res, next) => {
     //edits existing invoice
     try {
-        const { amt } = req.body
-        const { id } = req.params
+        let { amt, paid } = req.body;
+        const { id } = req.params;
+        const invoice = await db.query(
+            `SELECT * FROM invoices WHERE id = $1`, [id]);
+        let paid_date = invoice['paid_date']
+        let hasPaid = invoice['paid']
+        if (paid && !hasPaid) {
+            paid_date = new Date()
+        } else if (!paid && hasPaid) {
+            paid_date = null
+        }
         const results = await db.query(
-            'UPDATE invoices SET amt=$1 WHERE id=$2 RETURNING id, comp_code, amt, paid, add_date, paid_date', [amt, id]);
+            'UPDATE invoices SET paid=$1, amt=$2, paid_date=$3 WHERE id=$4 RETURNING id, comp_code, amt, paid, add_date, paid_date', [paid, amt, paid_date, id]);
         if (results.rows.length === 0) {
             throw new ExpressError(`Can't find invoice with id of ${id}`, 404)
         }
