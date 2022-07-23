@@ -26,8 +26,10 @@ router.get("/:code", async function (req, res, next) {
         }
         const invoices = await db.query(`SELECT * FROM invoices WHERE comp_code = $1`, [code])
         const invoiceIds = invoices.rows.map(invoice => invoice.id)
+        const industries = await db.query(`SELECT * FROM company_industries WHERE company_code = $1`, [code])
+        const industryCodes = industries.rows.map(industry => industry.industry_code)
         const { name, description } = company.rows[0]
-        const resObj = { company: { code, name, description, "invoices": invoiceIds } }
+        const resObj = { company: { code, name, description, "invoices": invoiceIds, "industries": industryCodes } }
         return res.send(resObj)
     } catch (err) {
         return next(err)
